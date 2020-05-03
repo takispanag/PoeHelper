@@ -14,20 +14,23 @@ def main():
     win32gui.ShowWindow(hwnd, 9)
     win32gui.MoveWindow(hwnd, -7, 0, 500, 500, True)
 
+    currency ={
+        "chaos":0,
+        "exalted":0,
+        "alchemy":0,
+        "fusing":0
+    }
+
     sleep(2)
     window = get_trade_window()
-    img_rgb = window[0]
+    img_rgb = window[0] #focus only on trade
     img_rgb = np.array(img_rgb)
     img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
     template = cv2.imread("images/chaosOrig.png", 0)
 
     w, h = template.shape[::-1]
     res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
-    precision = 0.86
-    loc = np.where(res >= precision)
-    count = 0
-    total_currency = 0
-    for pt in zip(*loc[::-1]):  # Swap columns and rows
+    
         cv2.rectangle(img_rgb, pt, (pt[0] + w, pt[1] + h), (0, 0, 255), 2) #draw boxes around found occurrences
         center_x = pt[0] + w/2
         center_y = pt[1] + h/2
@@ -44,12 +47,10 @@ def main():
             clipb = Tk()
             result = clipb.selection_get(selection="CLIPBOARD")
             #get total currency
-            total_currency += get_currency_stack(result)
-        #sleep(3)
-        sleep(0.5)
+            currency["chaos"] += get_currency_stack(result)
+        #sleep(0.5)
     cv2.imwrite('res.png', img_rgb)
-    print("Found", count, "Total currency: ", total_currency)
-    #asdadqdqwdqwdq
+    print("Found", count, "Total currency: ", currency["chaos"])
 
 def get_currency_stack(string):
     stack_text = re.findall("\d+\/\d+", string)[0].split("/")[0]
@@ -73,6 +74,9 @@ def get_trade_window():
     img = pyautogui.screenshot(region=(topLeftP[0], topLeftP[1]+20, (bottomRightP[0]-topLeftP[0])+10, (bottomRightP[1]-topLeftP[1])-20))
     img.save("trade_window.png")
     return [img, topLeftP[0], topLeftP[1]+20]
+
+# def currency_update(currency):
+
 
 if __name__ == "__main__":
     main()
