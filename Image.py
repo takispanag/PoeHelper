@@ -7,6 +7,7 @@ import win32gui
 import pyperclip
 import numpy as np
 import keyboard
+from glob import glob
 
 def main():
     #focus poe
@@ -27,45 +28,51 @@ def main():
     img_rgb = window[0] #focus only on trade
     img_rgb = np.array(img_rgb)
     img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
-    template = cv2.imread("images/chaosOrig.png", 0)
 
-    count = 0
-    cell_distance=30
-    w, h = template.shape[::-1]
-    res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
-    precision = 0.86
-    loc = np. where(res >= precision)
-    total_currency = 0
-    currency_name=''
-    for pt in zip(*loc[::-1]):  # Swap columns and rows
-        cv2.rectangle(img_rgb, pt, (pt[0] + w, pt[1] + h), (0, 0, 255), 2) #draw boxes around found occurrences
-        center_x = pt[0] + w/2
-        center_y = pt[1] + h/2
+    img_mask = 'images/currency/*.png'
+    img_names = glob(img_mask)
+    for fn in img_names:
+        print('processing %s...' % fn,)
+        template = cv2.imread(fn, 0)
+    #template = cv2.imread("images/chaosOrig.png", 0)
+
+        count = 0
+        cell_distance=30
+        w, h = template.shape[::-1]
+        res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
+        precision = 0.75
+        loc = np. where(res >= precision)
+        total_currency = 0
+        currency_name=''
+        for pt in zip(*loc[::-1]):  # Swap columns and rows
+            cv2.rectangle(img_rgb, pt, (pt[0] + w, pt[1] + h), (0, 0, 255), 2) #draw boxes around found occurrences
+            center_x = pt[0] + w/2
+            center_y = pt[1] + h/2
+            
+
+            pyautogui.moveTo(center_x+window[1]-30, center_y+window[2]-15)
+            result=pyperclip.copy('') # empty the string
+            print("Result before ctrl+C: ",result)
+            keyboard.press_and_release('ctrl+c')
+            pyautogui.hotkey('ctrl', 'c')
+            # pyautogui.keyDown('ctrl')
+            # pyautogui.keyDown('c')
+            # pyautogui.keyUp('c')
+            # pyautogui.keyUp('ctrl')
+            #get clipboard content
+            try:
+                result = Tk().clipboard_get()
+            except:
+                selection = None
+            if result: #string not empty
+                #get total currency
+                currency_info= get_info(result)
+                currency_name= ''.join(currency_info[1])
+                currency[currency_name] += currency_info[0]
+                #sleep(0.5)
+        cv2.imwrite('res.png', img_rgb)
         
-
-        pyautogui.moveTo(center_x+window[1]-30, center_y+window[2]-15)
-        result=pyperclip.copy('') # empty the string
-        print("Result before ctrl+C: ",result)
-        keyboard.press_and_release('ctrl+c')
-        pyautogui.hotkey('ctrl', 'c')
-        # pyautogui.keyDown('ctrl')
-        # pyautogui.keyDown('c')
-        # pyautogui.keyUp('c')
-        # pyautogui.keyUp('ctrl')
-        #get clipboard content
-        try:
-            result = Tk().clipboard_get()
-        except:
-            selection = None
-        if result: #string not empty
-            #get total currency
-            currency_info= get_info(result)
-            currency_name= ''.join(currency_info[1])
-            currency[currency_name] += currency_info[0]
-            #sleep(0.5)
-    cv2.imwrite('res.png', img_rgb)
-    print("Found", count, "Total ",currency_name, ": ", currency[currency_name])
-    
+        
     #loop through the cells left
     for i in range(12):
         for j in range(5):
@@ -73,13 +80,15 @@ def main():
             next_position=[window[1] + (i+1*cell_distance), window[2] + (j+1*cell_distance)]
             pyautogui.dragTo(position[0],position[1])
 
+    print("Total  currencies found: ",currency)
+
     #if trade button is clickable
     found=False      
     while not found:
         try:
             tradeButton = pyautogui.center(pyautogui.locateOnScreen('images/tradeAccept.png'))
             sleep(0.5)
-            pyautogui.click(int(tradeButton[0]),int(tradeButton[1])+10,clicks=2,interval=0.25)
+            pyautogui.click(pyautogui.moveTo(int(tradeButton[0]),int(tradeButton[1])+10))
             found = True
         except:
             pass
@@ -87,6 +96,7 @@ def main():
 def get_info(string):
     curr_number = re.findall("\d+\/\d+", string)[0].split("/")[0] #find number of stack
     curr_name = re.findall("Alchemy|Chaos|Fusing|Exalted",string) #find currency name
+    currency = print(re.findall("(: )+Currency[\n]",string))
     print(int(curr_number),curr_name)
     return [int(curr_number),curr_name]
 
