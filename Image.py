@@ -16,10 +16,10 @@ def main():
     win32gui.MoveWindow(hwnd, -7, 0, 500, 500, True)
 
     currency ={
-        "chaos":0,
-        "exalted":0,
-        "alchemy":0,
-        "fusing":0
+        "Chaos":0,
+        "Exalted":0,
+        "Alchemy":0,
+        "Fusing":0
     }
 
     sleep(2)
@@ -33,14 +33,14 @@ def main():
     # center_y = pt[1] + h/2
     count = 0
     cell_distance=30
-    for i in range(12):
+    for i in range(1):
         for j in range(5):
             position=[window[1] + (i*cell_distance), window[2] + (j*cell_distance)]
             next_position=[window[1] + (i+1*cell_distance), window[2] + (j+1*cell_distance)]
 
             result=pyperclip.copy('') # empty the string
 
-            pyautogui.moveTo(position[0], position[1])
+            pyautogui.dragTo(position[0], position[1])
             #ctrl c
             #pyautogui.hotkey('ctrl', 'c')
             keyboard.press_and_release('ctrl+c')
@@ -55,17 +55,29 @@ def main():
                 selection = None
             if result: #string not empty
                 #get total currency
-                last_currency= get_info(result)
-                currency["chaos"] += last_currency
+                currency_info= get_info(result)
+                currency_name= ''.join(currency_info[1])
+                currency[currency_name] += currency_info[0]
                 #sleep(0.5)
-    cv2.imwrite('res.png', img_rgb)
-    print("Found", count, "Total currency: ", currency["chaos"])
+    #cv2.imwrite('res.png', img_rgb)
+    print("Found", count, "Total ",currency_name, ": ", currency[currency_name])
+    found=False
+    while not found:
+        try:
+            tradeButton = pyautogui.center(pyautogui.locateOnScreen('images/tradeAccept.png'))
+            sleep(0.5)
+            pyautogui.click(int(tradeButton[0]),int(tradeButton[1]))
+            found = True
+        except:
+            pass
+        
+    
 
 def get_info(string):
-    stack_text = re.findall("\d+\/\d+", string)[0].split("/")[0]
-    print("Found :",int(stack_text))
-    print(re.search("(.*)\n-+",text).group(1))
-    return (int(stack_text))
+    curr_number = re.findall("\d+\/\d+", string)[0].split("/")[0] #find number of stack
+    curr_name = re.findall("Alchemy|Chaos|Fusing|Exalted",string) #find currency name
+    print(int(curr_number),curr_name)
+    return [int(curr_number),curr_name]
 
 def get_trade_window():
     topLeft = pyautogui.locateOnScreen('images/topLeft.png')
