@@ -6,6 +6,7 @@ import cv2
 import win32gui
 import pyperclip
 import numpy as np
+import keyboard
 
 def main():
     #focus poe
@@ -41,7 +42,8 @@ def main():
 
             pyautogui.moveTo(position[0], position[1])
             #ctrl c
-            pyautogui.hotkey('ctrl', 'c')
+            #pyautogui.hotkey('ctrl', 'c')
+            keyboard.press_and_release('ctrl+c')
             # pyautogui.keyDown('ctrl')
             # pyautogui.keyDown('c')
             # pyautogui.keyUp('c')
@@ -62,6 +64,7 @@ def main():
 def get_info(string):
     stack_text = re.findall("\d+\/\d+", string)[0].split("/")[0]
     print("Found :",int(stack_text))
+    print(re.search("(.*)\n-+",text).group(1))
     return (int(stack_text))
 
 def get_trade_window():
