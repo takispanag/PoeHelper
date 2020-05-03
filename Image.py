@@ -40,7 +40,7 @@ def main():
 
             result=pyperclip.copy('') # empty the string
 
-            pyautogui.dragTo(position[0], position[1])
+            pyautogui.moveTo(position[0], position[1])
             #ctrl c
             #pyautogui.hotkey('ctrl', 'c')
             keyboard.press_and_release('ctrl+c')
