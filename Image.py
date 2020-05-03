@@ -1,10 +1,11 @@
 from time import sleep
+from tkinter import Tk
+import re
 import pyautogui
 import cv2
 import win32gui
-from tkinter import Tk
-import re
 import pyperclip
+import numpy as np
 
 def main():
     #focus poe
@@ -23,7 +24,7 @@ def main():
     w, h = template.shape[::-1]
     res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
     precision = 0.86
-    loc = np. where(res >= precision)
+    loc = np.where(res >= precision)
     count = 0
     total_currency = 0
     for pt in zip(*loc[::-1]):  # Swap columns and rows
@@ -48,12 +49,12 @@ def main():
         sleep(0.5)
     cv2.imwrite('res.png', img_rgb)
     print("Found", count, "Total currency: ", total_currency)
-
+    #asdadqdqwdqwdq
 
 def get_currency_stack(string):
-   stack_text = re.findall("\d+\/\d+",string)[0].split("/")[0]
-   print(int(stack_text))
-   return (int(stack_text))
+    stack_text = re.findall("\d+\/\d+", string)[0].split("/")[0]
+    print(int(stack_text))
+    return (int(stack_text))
 
 def clip_change():
     recent_value = ""
@@ -65,11 +66,11 @@ def clip_change():
             return True
 
 def get_trade_window():
-    topLeft=pyautogui.locateOnScreen('topLeft.png')
-    bottomRight=pyautogui.locateOnScreen('bottomRight.png')
-    topLeftP=pyautogui.center(topLeft)
-    bottomRightP=pyautogui.center(bottomRight)
-    img=pyautogui.screenshot(region=(topLeftP[0], topLeftP[1]+20, (bottomRightP[0]-topLeftP[0])+10, (bottomRightP[1]-topLeftP[1])-20))
+    topLeft = pyautogui.locateOnScreen('images/topLeft.png')
+    bottomRight = pyautogui.locateOnScreen('images/bottomRight.png')
+    topLeftP = pyautogui.center(topLeft)
+    bottomRightP = pyautogui.center(bottomRight)
+    img = pyautogui.screenshot(region=(topLeftP[0], topLeftP[1]+20, (bottomRightP[0]-topLeftP[0])+10, (bottomRightP[1]-topLeftP[1])-20))
     img.save("trade_window.png")
     return [img, topLeftP[0], topLeftP[1]+20]
 
