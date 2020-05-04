@@ -14,14 +14,18 @@ import concurrent.futures
 
 def main():
     #focus poe
-    
-    hwnd = win32gui.FindWindow(None, 'Path of Exile')
-    win32gui.SetForegroundWindow(hwnd)
-    win32gui.ShowWindow(hwnd, 9)
-    win32gui.MoveWindow(hwnd, -7, 0, 500, 500, True)
+    try:
+        hwnd = win32gui.FindWindow(None, 'Path of Exile')
+        win32gui.SetForegroundWindow(hwnd)
+        win32gui.ShowWindow(hwnd, 9)
+        win32gui.MoveWindow(hwnd, -7, 0, 500, 500, True)
+    except:
+        print("Path of Exile not open! Please open it and run again.")
+        sys.exit()
     
     #listen on client.log
     executor_log = concurrent.futures.ThreadPoolExecutor(1)
+    #file_ret = read_file[0]
     future_file = executor_log.submit(read_file, "F:/Games/POE/logs/Client.txt")
 
     #if x entered kill proccess
@@ -35,8 +39,9 @@ def main():
 
 
 
+
     sleep(2)
-    do_trade()
+    #do_trade()
     #trade accepted
     #currency_trading=dict.fromkeys(currency_trading)
 
@@ -95,6 +100,7 @@ def do_trade():
             found = True
         except:
             pass
+
 def get_info(string):
     curr_list = all_currencies
     #item_name = print(re.search("\n(.*)\n-",string).group(1))#get item name
@@ -110,12 +116,11 @@ def get_info(string):
     print(category,curr_name,int(curr_number))
     return [category,curr_name,int(curr_number)]
 
-
 def read_file(filepath):
         logfile = open(filepath)
         loglines = follow(logfile)
         for line in loglines:
-            return print(log_parser(line))
+            return [line,log_parser(line)]
 
 def get_trade_window():
     topLeft = pyautogui.locateOnScreen('images/topLeft.png')
@@ -125,8 +130,6 @@ def get_trade_window():
     img = pyautogui.screenshot(region=(topLeftP[0], topLeftP[1]+20, (bottomRightP[0]-topLeftP[0])+10, (bottomRightP[1]-topLeftP[1])-20))
     img.save("trade_window.png")
     return [img, topLeftP[0]+20, topLeftP[1]+35] #image, first cell (x,y)
-
-    
 
 def follow(thefile):
     '''generator function that yields new lines in a file
@@ -145,21 +148,22 @@ def follow(thefile):
         yield line
 
 def log_parser(sell_pm):
-    sell_pm=re.search("(.*)Hi, I'd like to buy your (.*) for my (.*) in (.*)",sell_pm)
+    print(sell_pm)
+    sell_pm=re.search("(.*) @From (.*): Hi, I'd like to buy your (.*) for my (.*) in (.*)",sell_pm)
+    print(sell_pm)
     options=[]
     for i in sell_pm.groups():
         options.append(i)
-    print(options)
-    buyer = options[0]
-    my_currency = options[1]
-    their_currency = options[2]
-    print(buyer,my_currency,their_currency)
+    buyer = options[1]
+    my_currency = options[2]
+    their_currency = options[3]
+    return print("Log Parser: ",[buyer,my_currency,their_currency])
 
 def kill_process():
     while True:
         if keyboard.is_pressed('x'):
             os._exit(1)
-            print("You pressed X procces killed.")
+            print("You pressed X process killed.")
 
 if __name__ == "__main__":
     main()
