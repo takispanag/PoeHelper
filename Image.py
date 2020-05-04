@@ -1,4 +1,4 @@
-from time import sleep
+from time import sleep,time
 from tkinter import Tk
 import re
 import pyautogui
@@ -9,30 +9,50 @@ import numpy as np
 import keyboard
 from currencies import *
 import os
+import sys
+import concurrent.futures
 
 def main():
     #focus poe
+    
     hwnd = win32gui.FindWindow(None, 'Path of Exile')
     win32gui.SetForegroundWindow(hwnd)
     win32gui.ShowWindow(hwnd, 9)
     win32gui.MoveWindow(hwnd, -7, 0, 500, 500, True)
+    
+    #listen on client.log
+    executor_log = concurrent.futures.ThreadPoolExecutor(1)
+    future_file = executor_log.submit(read_file, "F:/Games/POE/logs/Client.txt")
 
-    log_open()
+    #if x entered kill proccess
+    executor_kill = concurrent.futures.ThreadPoolExecutor(1)
+    process_to_be_killed = executor_kill.submit(kill_process) 
+
+    # logfile = open("F:/Games/POE/logs/Client.txt","r")
+    # loglines = follow(logfile)
+    # for line in loglines:
+    #     print (line)
+
+
+
     sleep(2)
+    do_trade()
+    #trade accepted
+    #currency_trading=dict.fromkeys(currency_trading)
+
+def do_trade():
     window = get_trade_window()
-    img_rgb = window[0] #focus only on trade
+    # img_rgb = window[0] #focus only on trade
     # img_rgb = np.array(img_rgb)
     # img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
     # template = cv2.imread("images/chaosOrig.png", 0)
 
     # center_x = pt[0] + w/2
     # center_y = pt[1] + h/2
-    count = 0
     cell_distance=30
-    for i in range(2):
+    for i in range(4):
         for j in range(5):
             position=[window[1] + (i*cell_distance), window[2] + (j*cell_distance)]
-            next_position=[window[1] + (i+1*cell_distance), window[2] + (j+1*cell_distance)]
 
             result=pyperclip.copy('') # empty the string
 
@@ -65,7 +85,6 @@ def main():
         if value>0:
             in_trade_currency[key]=value
     print("Total  currencies found in trade: ",in_trade_currency)
-    logOpen()
     #if trade button is clickable
     found=False      
     while not found:
@@ -76,10 +95,6 @@ def main():
             found = True
         except:
             pass
-
-    #trade accepted
-    #currency_trading=dict.fromkeys(currency_trading)
-
 def get_info(string):
     curr_list = all_currencies
     #item_name = print(re.search("\n(.*)\n-",string).group(1))#get item name
@@ -96,6 +111,12 @@ def get_info(string):
     return [category,curr_name,int(curr_number)]
 
 
+def read_file(filepath):
+        logfile = open(filepath)
+        loglines = follow(logfile)
+        for line in loglines:
+            return print(log_parser(line))
+
 def get_trade_window():
     topLeft = pyautogui.locateOnScreen('images/topLeft.png')
     bottomRight = pyautogui.locateOnScreen('images/bottomRight.png')
@@ -105,11 +126,7 @@ def get_trade_window():
     img.save("trade_window.png")
     return [img, topLeftP[0]+20, topLeftP[1]+35] #image, first cell (x,y)
 
-def log_open():
-    logfile = open("F:/Games/POE/logs/Client.txt","r")
-    loglines = follow(logfile)
-    for line in loglines:
-        print (line)
+    
 
 def follow(thefile):
     '''generator function that yields new lines in a file
@@ -122,16 +139,27 @@ def follow(thefile):
         # read last line of file
         line = thefile.readline()        # sleep if file hasn't been updated
         if not line:
-            time.sleep(0.1)
+            sleep(0.1)
             continue
 
         yield line
 
-def logParser():
-    buy=re.search("(.*)Hi, I would like to buy your (.*) listed for (.*) in (.*)",buy)
-    for x in buy.groups():
-        print(x)
+def log_parser(sell_pm):
+    sell_pm=re.search("(.*)Hi, I'd like to buy your (.*) for my (.*) in (.*)",sell_pm)
+    options=[]
+    for i in sell_pm.groups():
+        options.append(i)
+    print(options)
+    buyer = options[0]
+    my_currency = options[1]
+    their_currency = options[2]
+    print(buyer,my_currency,their_currency)
 
+def kill_process():
+    while True:
+        if keyboard.is_pressed('x'):
+            os._exit(1)
+            print("You pressed X procces killed.")
 
 if __name__ == "__main__":
     main()
