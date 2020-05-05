@@ -11,14 +11,18 @@ from currencies import *
 import os
 import sys
 import concurrent.futures
+from pygtail import Pygtail
+
 
 def main():
     focus_poe()
-    
     #listen on client.log thread
+    # with concurrent.futures.ThreadPoolExecutor(1) as ex:
+    #     results = ex.map(read_file,"F:/Games/POE/logs/Client.txt")
+    #     print(results)
+    line_list = []
     executor_log = concurrent.futures.ThreadPoolExecutor(1)
-    #file_ret = read_file[0]
-    future_file = executor_log.submit(read_file, "F:/Games/POE/logs/Client.txt")
+    file_being_read = executor_log.submit(read_file, "F:/Games/POE/logs/Client.txt")
 
     #kill proccess when X pressed thread
     executor_kill = concurrent.futures.ThreadPoolExecutor(1)
@@ -29,10 +33,6 @@ def main():
     # for line in loglines:
     #     print (line)
 
-
-    sleep(2)
-
-    invite_buyer("FirejuggGGG")
 
     #do_trade()
 
@@ -67,7 +67,7 @@ def do_trade():
                 selection = None
             if result: #string not empty
                 #get total currency
-                item_info= get_info(result)
+                item_info = get_item_info(result)
                 print(item_info)
                 if item_info[0] is None:
                     break
@@ -101,7 +101,7 @@ def do_trade():
                 #sleep between tries to accept trade
                 sleep(1)
 
-def get_info(string):
+def get_item_info(string):
     curr_list = all_currencies
     #item_name = print(re.search("\n(.*)\n-",string).group(1))#get item name
     item_name = string
@@ -113,14 +113,8 @@ def get_info(string):
         category = "other"
         curr_number = -1
         curr_name = "not currency"
-    print(category,curr_name,int(curr_number))
+    print("Item category: "+category+" currency name: "+curr_name+" number: ",(int(curr_number)))
     return [category,curr_name,int(curr_number)]
-
-def read_file(filepath):
-    logfile = open(filepath)
-    loglines = follow(logfile)
-    for line in loglines:
-        return [line,log_parser(line)] #i added log_parser(line) so normal function was return line
 
 def get_trade_window():
     #Only trade window in image
@@ -132,40 +126,81 @@ def get_trade_window():
     img.save("trade_window.png")
     return [img, topLeftP[0]+20, topLeftP[1]+35] #image, first cell in trade window(x,y)
 
-def follow(thefile):
-    '''generator function that yields new lines in a file
-    '''
-    # seek the end of the file
-    thefile.seek(0, 2)
+def sell_pm_and_invite(line):
+    try:
+        line=re.search("(.*)@From (.*):  Hi, I'd like to buy your (.*) for my (.*) in (.*)",line)
+        options=[]
+        #take all the needed arguments from the (.*)
+        for i in line.groups():
+            options.append(i)
+        #get buyer_name from full username and guild. Example: <"UJ"> DoTMadness I only get DoTMadness
+        buyer_name = get_name(options[1])
+        my_currency = options[2]
+        their_currency = options[3]
+        #if requirements met
+        send_invite(buyer_name,line)
+        print(buyer_name,my_currency,their_currency)
+        return [buyer_name,my_currency,their_currency]
+    except:
+        pass
     
-    # start infinite loop
-    while True:
-        # read last line of file
-        line = thefile.readline()        # sleep if file hasn't been updated
-        if not line:
-            sleep(0.1)
-            continue
 
-        yield line
+def log_regex_match(line):
+    try:
+        line_trade = re.search("(.*)@From (.*):  Hi, I'd like to buy your (.*) for my (.*) in (.*)",line).groups()
+        if line_trade is not None:
+            #take all the needed arguments from the (.*)
+            #get buyer_name from full username and guild. Example: <"UJ"> DoTMadness I only get DoTMadness
+            buyer_name = get_name(line_trade[1])
+            my_currency = line_trade[2]
+            their_currency = line_trade[3]
+            #if requirements met
+            #send_invite(buyer_name,line)
+            print("Buyer: "+buyer_name+" their currency: "+my_currency+" for my: "+their_currency)
+        #elif 
+    except:
+        pass
 
-def log_parser(sell_pm):
-    pm = """2020/05/04 20:51:19 41618171 acf [INFO Client 7200] @From <"UJ"> DoTMadness: Hi, I'd like to buy your 56 Orb of Augmentation for my 10 Chaos Orb in Delirium.asdasdadssa"""
-    #print("Whole line :",sell_pm)
-    sell_pm=re.search("(.*)@From (.*): Hi, I'd like to buy your (.*) for my (.*) in (.*)",pm)
-    options=[]
-    #take all the needed arguments from the (.*)
-    for i in sell_pm.groups():
-        options.append(i)
+    try:
+        line_joined = re.search("^(?:[^ ]+ ){6}(\d+)\] : (.*?) has joined the area.*",line).groups()
+        if line_joined is not None:
+            print("Player: "+get_name(line_joined[1])+" has joined the area.")
+    except:
+        pass
+
+    try:
+        line_left = re.search("^(?:[^ ]+ ){6}(\d+)\] : (.*?) has left the area.*",line).groups()
+        if line_left is not None:
+            print("Player: "+get_name(line_left[1])+" has left the area.")
+    except:
+        pass
     
-    #get buyer_name from full username and guild. Example: <"UJ"> DoTMadness I only get DoTMadness
-    buyer_full_name = options[1].split(' ')
-    if len(buyer_full_name)<2: #user is not in a guild so first argument is the name
-        buyer_name = buyer_full_name[0]
+
+def get_name(full_name):
+    name_tuple = full_name.split(' ')
+    if len(name_tuple)<2: #user is not in a guild so first argument is the name
+        name = name_tuple[0]
     else:                       #user is in a guild so first argument is the name
-        buyer_name = buyer_full_name[1]
-    my_currency = options[2]
-    their_currency = options[3]
-    return print("Log Parser: ",[buyer_name,my_currency,their_currency])
+        name = name_tuple[1]
+    return name
+
+def player_joined_area(line):
+    try:
+        line = re.search("^(?:[^ ]+ ){6}(\d+)\] : (.*?) has joined the area.*",line).groups()
+        if line is not None:
+            print("Player: "+get_name(line[1])+" has joined the area.")
+            return [get_name(line[1])]
+    except:
+        pass
+
+def player_left_area(line):
+    try:
+        line = re.search("^(?:[^ ]+ ){6}(\d+)\] : (.*?) has left the area.*",line).groups()
+        if line is not None:
+            print("Player: "+get_name(line[1])+" has left the area.")
+            return [get_name(line[1])]
+    except:
+        pass
 
 def open_stash():
     focus_poe()
@@ -185,17 +220,29 @@ def open_stash():
             pass
         sleep(1)
     
-#def invite_buyer(buyer):
+def trade_accepted(line):
+    if "Trade accepted." in line:
+        print("Trade accepted.")
+        return True
+    elif "Trade cancelled." in line:
+        print("Trade cancelled.")
+        return False
     
-
-def send_trade(buyer):
-    invite_command = ("/tradewith " +buyer)
+def send_trade(buyer,line):
+    focus_poe()
+    trade_command = ("/tradewith " +buyer)
     pyautogui.press("enter")
-    sleep(1)
+    pyautogui.typewrite(trade_command)
+    pyautogui.press("enter")
+    print("Sent trade request to: "+buyer)
+
+def send_invite(buyer):
+    focus_poe()
+    invite_command = ("/invite "+buyer)
+    pyautogui.press("enter")
     pyautogui.typewrite(invite_command)
     pyautogui.press("enter")
-    print("Invited "+buyer)
-
+    print("Invite sent to : ",buyer)
 
 def focus_poe():
     #focus poe
@@ -207,6 +254,11 @@ def focus_poe():
     except:
         print("Path of Exile not open! Please open it and run again.")
         sys.exit()
+
+def read_file(filepath):
+    while True:
+        for line in Pygtail(filepath, read_from_end=True):
+            log_regex_match(line)
 
 def kill_process():
     #If i press X the proccess and the threads are killed
