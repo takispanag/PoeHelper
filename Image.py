@@ -13,15 +13,7 @@ import sys
 import concurrent.futures
 
 def main():
-    #focus poe
-    try:
-        hwnd = win32gui.FindWindow(None, 'Path of Exile')
-        win32gui.SetForegroundWindow(hwnd)
-        win32gui.ShowWindow(hwnd, 9)
-        win32gui.MoveWindow(hwnd, -7, 0, 500, 500, True)
-    except:
-        print("Path of Exile not open! Please open it and run again.")
-        sys.exit()
+    focus_poe()
     
     #listen on client.log thread
     executor_log = concurrent.futures.ThreadPoolExecutor(1)
@@ -37,7 +29,11 @@ def main():
     # for line in loglines:
     #     print (line)
 
+
     sleep(2)
+
+    invite_buyer("FirejuggGGG")
+
     #do_trade()
 
 def do_trade():
@@ -92,7 +88,7 @@ def do_trade():
     for key,value in in_trade_currency.items():
         if(key == "Orb of Fusing" and value>1000):
             #click trade button if trade requirements are met
-            found=False      
+            found = False      
             #while trade button not clickable
             while not found:
                 try:
@@ -170,6 +166,47 @@ def log_parser(sell_pm):
     my_currency = options[2]
     their_currency = options[3]
     return print("Log Parser: ",[buyer_name,my_currency,their_currency])
+
+def open_stash():
+    focus_poe()
+    stash_opened = False
+    while not stash_opened:
+        try:
+            if (pyautogui.locateOnScreen("images/currency/stash_open.png", confidence=.9)) is not None:
+                print("Stash is open")
+                stash_open = True
+            else:
+                print("Stash not open, searching for stash")
+                stash = pyautogui.locateOnScreen("images/currency/stash.png", confidence=.9)
+                if stash is not None:
+                    print("Stash found at: ",stash)
+                    pyautogui.click(pyautogui.moveTo(pyautogui.center(stash)))
+        except:
+            pass
+        sleep(1)
+    
+#def invite_buyer(buyer):
+    
+
+def send_trade(buyer):
+    invite_command = ("/tradewith " +buyer)
+    pyautogui.press("enter")
+    sleep(1)
+    pyautogui.typewrite(invite_command)
+    pyautogui.press("enter")
+    print("Invited "+buyer)
+
+
+def focus_poe():
+    #focus poe
+    try:
+        hwnd = win32gui.FindWindow(None, 'Path of Exile')
+        win32gui.SetForegroundWindow(hwnd)
+        win32gui.ShowWindow(hwnd, 9)
+        win32gui.MoveWindow(hwnd, -7, 0, 500, 500, True)
+    except:
+        print("Path of Exile not open! Please open it and run again.")
+        sys.exit()
 
 def kill_process():
     #If i press X the proccess and the threads are killed
